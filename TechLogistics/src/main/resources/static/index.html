@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>TechLogistics</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            background: #f4f6f8;
+        }
+
+        h1 {
+            color: #1f2937;
+        }
+
+        button {
+            padding: 10px 15px;
+            margin: 5px;
+            cursor: pointer;
+        }
+
+        input {
+            padding: 9px;
+            margin: 5px;
+            width: 80px;
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            margin-top: 20px;
+            border-radius: 8px;
+        }
+
+        .pedido {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin-top: 10px;
+        }
+
+        .estado {
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>TechLogistics</h1>
+
+    <p>Sistema de gestión de pedidos y rastreo de envíos</p>
+
+    <button onclick="cargarClientes()">Ver clientes</button>
+    <button onclick="cargarPedidos()">Ver pedidos</button>
+    <button onclick="mostrarRastreo()">Rastrear pedido</button>
+
+    <!-- Resultado general -->
+    <div id="resultado" class="card">
+        Selecciona una opción.
+    </div>
+
+    <!-- Rastreo -->
+    <div id="rastreo" class="card" style="display:none;">
+
+        <h2>Rastrear pedido</h2>
+
+        <label>ID del pedido:</label>
+
+        <input
+            type="number"
+            id="pedidoId"
+            value="1"
+            min="1"
+        >
+
+        <button onclick="rastrearPedido()">Buscar</button>
+
+        <div id="resultadoRastreo"></div>
+
+    </div>
+
+
+    <script>
+
+        // =========================
+        // MOSTRAR CLIENTES
+        // =========================
+
+        async function cargarClientes() {
+
+            const respuesta = await fetch("/clientes");
+            const clientes = await respuesta.json();
+
+            let html = "<h2>Clientes</h2>";
+
+            html += "<p>Total de clientes: " + clientes.length + "</p>";
+
+            clientes.forEach(cliente => {
+
+                html += `
+                    <div class="pedido">
+
+                        <strong>${cliente.nombre}</strong>
+                        <br>
+
+                        Documento: ${cliente.documento}
+                        <br>
+
+                        Teléfono: ${cliente.telefono}
+                        <br>
+
+                        Correo: ${cliente.correo}
+                        <br>
+
+                        Dirección: ${cliente.direccion}
+
+                    </div>
+                `;
+            });
+
+            document.getElementById("resultado").innerHTML = html;
+        }
+
+
+        // =========================
+        // MOSTRAR PEDIDOS
+        // =========================
+
+        async function cargarPedidos() {
+
+            const respuesta = await fetch("/pedidos");
+            const pedidos = await respuesta.json();
+
+            let html = "<h2>Pedidos y rastreo</h2>";
+
+            html += "<p>Total de pedidos: " + pedidos.length + "</p>";
+
+            pedidos.forEach(pedido => {
+
+                html += `
+                    <div class="pedido">
+
+                        <h3>Pedido #${pedido.id}</h3>
+
+                        <strong>Cliente:</strong>
+                        ${pedido.cliente
+                            ? pedido.cliente.nombre
+                            : "Sin asignar"}
+
+                        <br><br>
+
+                        <strong>Producto:</strong>
+                        Laptop
+
+                        <br><br>
+
+                        <strong>Dirección de entrega:</strong>
+                        ${pedido.direccionEntrega}
+
+                        <br><br>
+
+                        <strong>Total:</strong>
+                        $${pedido.total}
+
+                        <br><br>
+
+                        <strong>Transportista:</strong>
+                        ${pedido.transportista
+                            ? pedido.transportista.nombre
+                            : "Sin asignar"}
+
+                        <br><br>
+
+                        <strong>Ruta:</strong>
+                        ${pedido.ruta
+                            ? pedido.ruta.origen + " → " + pedido.ruta.destino
+                            : "Sin ruta"}
+
+                        <br><br>
+
+                        <strong>Estado:</strong>
+                        ${pedido.estadoEnvio
+                            ? pedido.estadoEnvio.nombre
+                            : "Sin estado"}
+
+                    </div>
+                `;
+            });
+
+            document.getElementById("resultado").innerHTML = html;
+        }
+
+
+        // =========================
+        // MOSTRAR SECCIÓN DE RASTREO
+        // =========================
+
+        function mostrarRastreo() {
+
+            document.getElementById("rastreo").style.display = "block";
+
+            document.getElementById("resultadoRastreo").innerHTML =
+                "<p>Ingrese el ID del pedido y presione Buscar.</p>";
+        }
+
+
+        // =========================
+        // RASTREAR PEDIDO
+        // =========================
+
+        async function rastrearPedido() {
+
+            const id = document.getElementById("pedidoId").value;
+
+            if (!id) {
+
+                document.getElementById("resultadoRastreo").innerHTML =
+                    "<p>Ingrese un ID de pedido.</p>";
+
+                return;
+            }
+
+            try {
+
+                const respuesta = await fetch("/pedidos/" + id);
+
+                if (!respuesta.ok) {
+
+                    document.getElementById("resultadoRastreo").innerHTML =
+                        "<p>Pedido no encontrado.</p>";
+
+                    return;
+                }
+
+                const pedido = await respuesta.json();
+
+                document.getElementById("resultadoRastreo").innerHTML = `
+
+                    <div class="pedido">
+
+                        <h3>Pedido #${pedido.id}</h3>
+
+                        <strong>Cliente:</strong>
+                        ${pedido.cliente
+                            ? pedido.cliente.nombre
+                            : "Sin asignar"}
+
+                        <br><br>
+
+                        <strong>Ruta:</strong>
+                        ${pedido.ruta
+                            ? pedido.ruta.origen + " → " + pedido.ruta.destino
+                            : "Sin ruta"}
+
+                        <br><br>
+
+                        <strong>Transportista:</strong>
+                        ${pedido.transportista
+                            ? pedido.transportista.nombre
+                            : "Sin asignar"}
+
+                        <br><br>
+
+                        <strong>Estado:</strong>
+                        <span class="estado">
+                            ${pedido.estadoEnvio
+                                ? pedido.estadoEnvio.nombre
+                                : "Sin estado"}
+                        </span>
+
+                        <br><br>
+
+                        <strong>Dirección de entrega:</strong>
+                        ${pedido.direccionEntrega}
+
+                        <br><br>
+
+                        <strong>Total:</strong>
+                        $${pedido.total}
+
+                    </div>
+
+                `;
+
+            } catch (error) {
+
+                document.getElementById("resultadoRastreo").innerHTML =
+                    "<p>Error al consultar el pedido.</p>";
+
+            }
+        }
+
+    </script>
+
+</body>
+</html>
